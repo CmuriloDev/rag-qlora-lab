@@ -1,41 +1,23 @@
+import time
 import torch
 
 from transformers import (
     AutoTokenizer,
-    AutoModelForCausalLM,
-    BitsAndBytesConfig
+    AutoModelForCausalLM
 )
 
 from utils import benchmark_generation
 from config import MODEL_ID, MAX_NEW_TOKENS
 
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16
-)
+DEVICE = "cpu"
+
+print(f"Running on: {DEVICE}")
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 
-try:
-
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        quantization_config=bnb_config,
-        device_map="auto",
-        attn_implementation="flash_attention_2"
-    )
-
-    print("FlashAttention-2 enabled.")
-
-except Exception:
-
-    print("FlashAttention-2 unavailable. Using default attention.")
-
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        quantization_config=bnb_config,
-        device_map="auto"
-    )
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID
+)
 
 model.config.use_cache = True
 
@@ -47,7 +29,7 @@ inputs = tokenizer(
     return_tensors="pt",
     truncation=True,
     max_length=12000
-).to("cuda")
+)
 
 def generate():
 
@@ -56,7 +38,10 @@ def generate():
         max_new_tokens=MAX_NEW_TOKENS
     )
 
-    return tokenizer.decode(output[0], skip_special_tokens=True)
+    return tokenizer.decode(
+        output[0],
+        skip_special_tokens=True
+    )
 
 result = benchmark_generation(generate)
 
