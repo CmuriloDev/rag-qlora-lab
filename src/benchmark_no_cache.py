@@ -24,11 +24,13 @@ model.config.use_cache = False
 with open("data/massive_context.txt", "r", encoding="utf-8") as f:
     context = f.read()
 
+max_context = min(tokenizer.model_max_length, 4096)
+
 inputs = tokenizer(
     context,
     return_tensors="pt",
     truncation=True,
-    max_length=12000
+    max_length=max_context
 )
 
 def generate():
